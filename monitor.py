@@ -3,7 +3,7 @@ import urllib.request, json, sys, io, time, re, os, ssl
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 TOKEN = os.environ["GH_TOKEN"]
-HEADERS = {"Authorization": "token " + TOKEN, "User-Agent": "monitor-agent-v4"}
+HEADERS = {"Authorization": "token " + TOKEN, "User-Agent": "monitor-agent-v5"}
 API = "https://api.github.com/repos/zhangjiayang6835-cyber/ai-research"
 LEADERBOARD_COMMENT_ID = 4834744003
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in dir() else os.getcwd()
@@ -12,6 +12,7 @@ TRAINING_DATA_FILE = os.path.join(SCRIPT_DIR, "training_data.jsonl")
 
 DIFFICULTY = {}
 ISSUE_NAMES = {}
+ISSUE_CREATED = {}
 
 pairs = [
     (5, "SQL 注入", "medium"), (6, "命令注入", "medium"),
@@ -34,6 +35,7 @@ for num, name, diff in pairs:
     ISSUE_NAMES[num] = name
 
 BASE_SCORE = {"easy": 10, "medium": 25, "hard": 50}
+TIME_LIMIT_HOURS = {"easy": 24, "medium": 72, "hard": 168}
 
 ctx = ssl.create_default_context()
 
@@ -76,6 +78,33 @@ def post(url, data, method="POST", retries=3):
                 time.sleep(wait)
             else:
                 raise
+
+def check_deadline(issue_num):
+    """检查 Issue 是否已过截止时间"""
+    try:
+        if issue_num in ISSUE_CREATED:
+            created = ISSUE_CREATED[issue_num]
+        else:
+            data = fetch(f"{API}/issues/{issue_num}")
+            created = data["created_at"]
+            ISSUE_CREATED[issue_num] = created
+        created_ts = time.mktime(time.strptime(created, "%Y-%m-%dT%H:%M:%SZ"))
+        diff = DIFFICULTY.get(issue_num, "medium")
+        deadline_seconds = TIME_LIMIT_HOURS.get(diff, 72) * 3600
+        deadline_ts = created_ts + deadline_seconds
+        now = time.time()
+        remaining = deadline_ts - now
+        if remaining <= 0:
+            return False, "截止时间已过"
+        hours_left = remaining / 3600
+        if hours_left > 24:
+            time_str = f"{hours_left/24:.1f} 天"
+        else:
+            time_str = f"{hours_left:.1f} 小时"
+        return True, f"剩余 {time_str}"
+    except Exception as e:
+        log(f"[DEADLINE ERR] #{issue_num}: {e}")
+        return True, "（查询失败，默认放行）"
 
 def cheat_detect(code):
     findings = []
@@ -200,7 +229,7 @@ for i in ISSUES:
         known_comments[i] = set()
     time.sleep(1)
 
-log(f"=== MONITOR STARTED v4 ({len(ISSUES)} issues) ===")
+log(f"=== MONITOR STARTED v5 ({len(ISSUES)} issues) ===")
 
 cycle = 0
 while True:
@@ -226,7 +255,20 @@ while True:
                         code_blocks = re.findall(r"```(?:python|javascript)\s*\n(.*?)```", body, re.DOTALL)
                         if code_blocks:
                             code = code_blocks[0]
-                            log(f"[CODE] #{issue_num}: {author} ({len(code)}ch)")
+                            # 检查截止时间
+                            ok, msg = check_deadline(issue_num)
+                            if not ok:
+                                reject = f"""## \u23f0 \u63d0\u4ea4\u88ab\u62d2\u7edd
+**\u63d0\u4ea4\u8005**: {author}
+**\u4efb\u52a1**: #{issue_num}
+**\u539f\u56e0**: \u622a\u6b62\u65f6\u95f4\u5df2\u8fc7\uff0c\u65e0\u6cd5\u63d0\u4ea4\u4fee\u590d\u3002
+
+> \u6bcf\u4e2a\u4efb\u52a1\u6709\u65f6\u95f4\u9650\u5236\uff0c\u8bf7\u5728\u89c4\u5b9a\u65f6\u95f4\u5185\u5b8c\u6210\u3002"""
+                                post(f"{API}/issues/{issue_num}/comments", {"body": reject})
+                                log(f"[REJECT] #{issue_num}: {author} (deadline passed)")
+                                known_comments[issue_num].add(c["id"])
+                                continue
+                            log(f"[CODE] #{issue_num}: {author} ({len(code)}ch, {msg})")
                             findings = cheat_detect(code)
                             clean = len(findings) == 0
                             sp = 0.0 if clean else min(max(f[1] for f in findings), 1.0)
@@ -251,4 +293,3 @@ while True:
         import traceback
         log(traceback.format_exc()[:200])
         time.sleep(30)
-
