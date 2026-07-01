@@ -163,7 +163,9 @@ jobs:
             report += `| 目标 Issue | #${targetIssue} |\n`;
             report += `| **代币奖励** | **$${totalScore}** |\n\n`;
 
-            report += `---\n*🤖 自动审查 by AI Training Bot*\n`;
+            report += `---\n*🤖 自动审查 by AI Training Bot\n
+
+> 💡 虚拟代币仅供学习排名使用，不可兑换为现金或加密货币。感谢您的贡献！🚀*\n`;
 
             // Store results
             core.setOutput('report', report);
