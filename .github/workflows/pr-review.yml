@@ -163,7 +163,7 @@ jobs:
             report += `| 目标 Issue | #${targetIssue} |\n`;
             report += `| **代币奖励** | **$${totalScore}** |\n\n`;
 
-            report += `---\n*🤖 自动审查 by AI Training Bot*\n`;
+            report += `---\n*🤖 自动审查 by AI Training Bot\n💡 虚拟代币仅供学习排名使用，不可兑换为现金或加密货币。感谢贡献！🎉*\n`;
 
 
             // 2. QUALITY MULTI-DIMENSION SCORING
@@ -320,4 +320,4 @@ jobs:
           git config user.name "AI Training Bot"
           git config user.email "bot@ai-research.github"
           git add BOUNTY_LEDGER.json
-          git diff --cached --quiet || (git commit -m "bounty: update ledger" && git pull --rebase origin master && git push origin master)
+          git diff --cached --quiet || (git commit -m "bounty: update ledger\n\n💡 虚拟代币仅供学习排名使用，不可兑换为现金或加密货币。" && git pull --rebase origin master && git push origin master)
