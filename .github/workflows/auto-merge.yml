@@ -127,19 +127,34 @@ jobs:
             }
 
             // All checks passed - try to merge
+            let qualityBadge = "";
             try {
-              await github.rest.pulls.merge({
-                owner, repo, pull_number: prNum,
-                merge_method: "squash",
-                commit_title: `fix: ${pr.title} (auto-merged #${prNum})`,
-                commit_message: `Auto-merged by AI Training Bot.
+              const { data: comments } = await github.rest.issues.listComments({
+                issue_number: prNum, owner, repo
+              });
+              const reviewComment = comments.find(c => c.body.includes("综合评分"));
+              if (reviewComment) {
+                const scoreMatch = reviewComment.body.match(/综合评分\**:\s*\*+(\d+)/);
+                if (scoreMatch) {
+                  const cs = parseInt(scoreMatch[1]);
+                  if (cs >= 90) qualityBadge = "🏆 优秀提交 (评分 " + cs + "/100)\n";
+                  else if (cs >= 75) qualityBadge = "✅ 良好提交 (评分 " + cs + "/100)\n";
+                }
+              }
+            } catch (e) {}
 
-✅ Score passed
+            await github.rest.pulls.merge({
+              owner, repo, pull_number: prNum,
+              merge_method: "squash",
+              commit_title: `fix: ${pr.title} (auto-merged #${prNum})`,
+              commit_message: `Auto-merged by AI Training Bot.
+
+${qualityBadge}✅ Score passed
 🔍 No cheating detected
 
-> 💡 虚拟代币仅供学习排名使用，不可兑换为现金或加密货币。`
-              });
-              console.log(`PR #${prNum}: MERGED successfully!`);
+> 💡 虚拟代币仅供学习排名使用，不可兑换为现金或加密货币。感谢贡献！🎉`
+            });
+            console.log(`PR #${prNum}: MERGED successfully!`);
             } catch (e) {
               // Merge conflict - need rebase
               if (e.message && e.message.includes("merge conflict")) {
