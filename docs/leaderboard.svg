@@ -15,57 +15,46 @@
 <text x="90" y="93" class="header">Participant</text>
 <text x="400" y="93" class="header">HONEY</text>
 <text x="500" y="93" class="header">Tasks</text>
-<text x="600" y="93" class="header">Streak</text>
 <line x1="20" y1="98" x2="780" y2="98" class="line"/>
 <text x="30" y="120" class="row">🥇</text>
 <text x="90" y="120" class="row">Rachaelisa</text>
 <text x="400" y="120" class="score">1410</text>
 <text x="500" y="120" class="row">43</text>
-<text x="600" y="120" class="row"> 0d</text>
 <text x="30" y="142" class="row">🥈</text>
 <text x="90" y="142" class="row">yk578</text>
 <text x="400" y="142" class="score">575</text>
 <text x="500" y="142" class="row">25</text>
-<text x="600" y="142" class="row"> 0d</text>
 <text x="30" y="164" class="row">🥉</text>
 <text x="90" y="164" class="row">hero-infosec</text>
 <text x="400" y="164" class="score">525</text>
 <text x="500" y="164" class="row">14</text>
-<text x="600" y="164" class="row"> 0d</text>
 <text x="30" y="186" class="row">#4</text>
 <text x="90" y="186" class="row">danielalanbates</text>
 <text x="400" y="186" class="score">515</text>
 <text x="500" y="186" class="row">13</text>
-<text x="600" y="186" class="row">🌱 1d</text>
 <text x="30" y="208" class="row">#5</text>
 <text x="90" y="208" class="row">namdamdoi68-oss</text>
 <text x="400" y="208" class="score">300</text>
-<text x="500" y="208" class="row">0</text>
-<text x="600" y="208" class="row">🌱 1d</text>
+<text x="500" y="208" class="row">4</text>
 <text x="30" y="230" class="row">#6</text>
 <text x="90" y="230" class="row">foxyManTou</text>
 <text x="400" y="230" class="score">220</text>
 <text x="500" y="230" class="row">10</text>
-<text x="600" y="230" class="row"> 0d</text>
 <text x="30" y="252" class="row">#7</text>
 <text x="90" y="252" class="row">bambooshadow-stu</text>
 <text x="400" y="252" class="score">105</text>
 <text x="500" y="252" class="row">14</text>
-<text x="600" y="252" class="row"> 0d</text>
 <text x="30" y="274" class="row">#8</text>
 <text x="90" y="274" class="row">Zubi-fix</text>
 <text x="400" y="274" class="score">100</text>
 <text x="500" y="274" class="row">3</text>
-<text x="600" y="274" class="row"> 0d</text>
 <text x="30" y="296" class="row">#9</text>
 <text x="90" y="296" class="row">MRhuang1106</text>
 <text x="400" y="296" class="score">65</text>
 <text x="500" y="296" class="row">4</text>
-<text x="600" y="296" class="row"> 0d</text>
 <text x="30" y="318" class="row">#10</text>
 <text x="90" y="318" class="row">merlinsantiago98</text>
 <text x="400" y="318" class="score">-35</text>
 <text x="500" y="318" class="row">1</text>
-<text x="600" y="318" class="row"> 0d</text>
 <line x1="20" y1="330" x2="780" y2="330" class="line"/>
 </svg>
