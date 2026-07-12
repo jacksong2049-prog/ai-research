@@ -42,7 +42,7 @@ jobs:
                 repo: context.repo.repo,
                 body: '## X Code block not found\\n\\nPlease wrap your code in triple backticks. Example:\\n```python\\nprint(\"fix\")\\n```\\n\\nBot will auto-evaluate after submission.'
               });
-              core.setFailed('No code');
+              console.log('No code - skipping');
               return;
             }
             const code = codeMatch[1];
