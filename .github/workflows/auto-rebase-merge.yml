@@ -78,8 +78,8 @@ jobs:
           PR_NUM="${{ steps.pr_info.outputs.pr_number }}"
           gh pr edit ${PR_NUM} --repo ${{ github.repository }} --add-label needs-merge-attention 2>/dev/null || true
 
-      -       - name: Close stale unmergeable PRs
-        if: steps.merge.outputs.merged == '"'"'false'"'"'
+      - name: Close stale unmergeable PRs
+        if: steps.merge.outputs.merged == 'false'
         uses: actions/github-script@v7
         with:
           script: |
@@ -99,7 +99,7 @@ jobs:
               console.log("Closed stale PR #" + prNum);
             }
 
-name: Clean up label
+      - name: Clean up label
         if: always()
         shell: bash
         env:
