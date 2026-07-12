@@ -78,7 +78,28 @@ jobs:
           PR_NUM="${{ steps.pr_info.outputs.pr_number }}"
           gh pr edit ${PR_NUM} --repo ${{ github.repository }} --add-label needs-merge-attention 2>/dev/null || true
 
-      - name: Clean up label
+      -       - name: Close stale unmergeable PRs
+        if: steps.merge.outputs.merged == '"'"'false'"'"'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNum = parseInt("${{ steps.pr_info.outputs.pr_number }}");
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner, repo: context.repo.repo, pull_number: prNum
+            });
+            const daysOld = (Date.now() - new Date(pr.data.created_at).getTime()) / 86400000;
+            if (daysOld > 2) {
+              await github.rest.issues.createComment({
+                issue_number: prNum, owner: context.repo.owner, repo: context.repo.repo,
+                body: "\u23f0 PR over 2 days old with unresolved conflict. Auto-closing.\n\n> Virtual tokens for learning ranking only, not redeemable for cash or crypto."
+              });
+              await github.rest.pulls.update({
+                pull_number: prNum, owner: context.repo.owner, repo: context.repo.repo, state: "closed"
+              });
+              console.log("Closed stale PR #" + prNum);
+            }
+
+name: Clean up label
         if: always()
         shell: bash
         env:
