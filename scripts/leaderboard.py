@@ -151,7 +151,7 @@ def build_markdown(data):
             f"| **{p['total_honey']}** "
             f"| {p['task_count']} "
             f"| {_streak_icon(p['streak'])} {p['streak']}d "
-            f"| {'\u2705' if p['clean_count'] >= p['task_count'] else '\u2014'} "
+            f"| {'✅' if p['clean_count'] >= p['task_count'] else '—'} "
             f"| {_grade_icon(p['total_honey'])} |"
         )
     parts.append("")
