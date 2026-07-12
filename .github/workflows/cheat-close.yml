@@ -22,9 +22,8 @@ jobs:
               console.log("Not a PR labeled event, skipping");
               return;
             }
-            const labelName = context.payload.label.name;
-            if (labelName !== "cheat-detected") {
-              console.log("Label is " + labelName + ", not cheat-detected, skipping");
+            if (context.payload.label.name !== "cheat-detected") {
+              console.log("Not cheat-detected label, skipping");
               return;
             }
             const prNum = pr.number;
