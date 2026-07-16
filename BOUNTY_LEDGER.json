@@ -194,5 +194,18 @@
         "date": "2026-07-11T02:48:42.851Z"
       }
     ]
+  },
+  "voladoradepapantla-netizen": {
+    "total": 75,
+    "submissions": [
+      {
+        "issue": 1209,
+        "targetIssue": "N/A",
+        "score": 75,
+        "clean": true,
+        "difficulty": "medium",
+        "date": "2026-07-16T02:41:31.372Z"
+      }
+    ]
   }
 }
