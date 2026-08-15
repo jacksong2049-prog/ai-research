@@ -1,9 +1,9 @@
 {
-  "lastCheck": "2026-08-15T06:41:37.084Z",
-  "successRate": "45%",
+  "lastCheck": "2026-08-15T12:41:14.431Z",
+  "successRate": "30%",
   "totalRuns": 20,
-  "successRuns": 9,
-  "failureRuns": 11,
+  "successRuns": 6,
+  "failureRuns": 14,
   "openIssues": 0,
   "openPRs": 0,
   "mergeablePRs": 0,
