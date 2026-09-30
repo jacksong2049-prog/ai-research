@@ -1,40 +1,28 @@
-from flask import Flask, request, jsonify
-from auth import UserManager, normalize_email
-from email_validator import validate_email, EmailNotValidError
-
-
+from __future__ import annotations
+from flask import Flask, jsonify, request
+from .auth import UserManager, normalize_email
 app = Flask(__name__)
-    if not email or not password:
-        return jsonify({"error": "Email and password are required"}), 400
-    
-    # Validate email format strictly
-    try:
-        validation = validate_email(email, check_deliverability=False)
-        email = validation.normalized  # Use the properly normalized email
-    except EmailNotValidError:
-        return jsonify({"error": "Invalid email format"}), 400
-    
-    # Reject emails with suspicious patterns that could indicate normalization attacks
-    if '\x00' in email or '\n' in email or '\r' in email:
-        return jsonify({"error": "Invalid email format"}), 400
-    
-    try:
-        user = user_manager.create_user(email, password)
-        return jsonify({"message": "User registered successfully", "email": user.email}), 201
-    if not email or not password:
-        return jsonify({"error": "Email and password are required"}), 400
-    
-    # Validate email format strictly
-    try:
-        validation = validate_email(email, check_deliverability=False)
-        email = validation.normalized
-    except EmailNotValidError:
-        return jsonify({"error": "Invalid email or password"}), 401
-    
-    # Reject emails with suspicious patterns
-    if '\x00' in email or '\n' in email or '\r' in email:
-        return jsonify({"error": "Invalid email or password"}), 401
-    
-    try:
-        user = user_manager.authenticate(email, password)
-        if user is None:
+user_manager = UserManager()
+
+def _credentials():
+    payload = request.get_json(silent=True) or request.form
+    return payload.get("email", ""), payload.get("password", "")
+
+@app.post("/register")
+def register():
+    email, password = _credentials()
+    if not email or not password: return jsonify({"error": "Email and password are required"}), 400
+    try: user = user_manager.create_user(normalize_email(email), password)
+    except ValueError as exc: return jsonify({"error": str(exc)}), 400
+    return jsonify({"message": "User registered successfully", "email": user.email}), 201
+
+@app.post("/login")
+def login():
+    email, password = _credentials()
+    if not email or not password: return jsonify({"error": "Email and password are required"}), 400
+    try: user = user_manager.authenticate(normalize_email(email), password)
+    except ValueError: user = None
+    if user is None: return jsonify({"error": "Invalid email or password"}), 401
+    return jsonify({"message": "Login successful", "email": user.email})
+
+if __name__ == "__main__": app.run(debug=False)

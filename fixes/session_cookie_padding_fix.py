@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Fix #268: Padding Oracle Attack on Encrypted Session Cookies.
 
 Root cause: Session cookies encrypted with unauthenticated AES-CBC allow

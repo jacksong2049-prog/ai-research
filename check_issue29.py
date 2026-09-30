@@ -1,51 +1,25 @@
 import subprocess
-import hashlib
 import sys
-import os
 
-req = urllib.request.Request("https://api.github.com/repos/zhangjiayang6835-cyber/ai-research/issues/29", headers=h)
+def install_package(package):
     subprocess.run([sys.executable, "-m", "pip", "install", package], check=True)
 
-def install_requirements(file_path):
-    # Security: Verify requirements file integrity before installation
-    if not verify_requirements_file(file_path):
-        print("Error: Requirements file verification failed. Possible dependency confusion attack.")
-        sys.exit(1)
-    with open(file_path, 'r') as f:
-        for line in f:
-            line = line.strip()
-                continue
-            install_package(line)
+def is_typosquatting_suspicious(package_name):
+    return any(p in package_name.lower() for p in ("reqeusts", "urllib3-", "crypt0", "pycryptodome-", "django-", "flask-"))
 
 def verify_requirements_file(file_path):
-    # Verify that the requirements file only contains allowed package sources
-    allowed_hosts = ['pypi.org', 'files.pythonhosted.org']
-    with open(file_path, 'r') as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith('#'):
-                continue
-            # Reject lines with explicit URLs or non-PyPI sources
-            if line.startswith('http://') or line.startswith('https://'):
-                print(f"Blocked: External URL in requirements: {line}")
-                return False
-            # Reject packages with suspicious typosquatting patterns
-            pkg_name = line.split('==')[0].split('>=')[0].split('<=')[0].split('!=')[0].strip().lower()
-            if is_typosquatting_suspicious(pkg_name):
-                print(f"Blocked: Suspicious package name detected: {pkg_name}")
-                return False
+    for raw in open(file_path, encoding="utf-8"):
+        line = raw.strip()
+        if not line or line.startswith("#"): continue
+        if line.startswith(("http://", "https://")): return False
+        package = line.split("==")[0].split(">=")[0].split("<=")[0].split("!=")[0].strip()
+        if is_typosquatting_suspicious(package): return False
     return True
 
-def is_typosquatting_suspicious(package_name):
-    # Detect common typosquatting patterns
-    suspicious_patterns = ['reqeusts', 'urllib3-', 'crypt0', 'pycryptodome-', 'django-', 'flask-']
-    for pattern in suspicious_patterns:
-        if pattern in package_name:
-            return True
-    # Detect character substitution attacks (e.g., l vs 1, 0 vs o)
-    normalized = package_name.replace('0', 'o').replace('1', 'l').replace('rn', 'm')
-    return False
+def install_requirements(file_path):
+    if not verify_requirements_file(file_path): raise SystemExit("Requirements file verification failed")
+    for raw in open(file_path, encoding="utf-8"):
+        package = raw.strip()
+        if package and not package.startswith("#"): install_package(package)
 
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        install_requirements(sys.argv[1])
+if __name__ == "__main__" and len(sys.argv) > 1: install_requirements(sys.argv[1])
