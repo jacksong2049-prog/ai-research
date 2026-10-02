@@ -1,4 +1,4 @@
-﻿"""Fix #266: Side-Channel Timing Attack on Constant-Time Comparison.
+"""Fix #266: Side-Channel Timing Attack on Constant-Time Comparison.
 
 Root cause: Non-constant-time string comparison (== or !=) leaks timing
 information, allowing an attacker to brute-force secrets (API keys, tokens,
