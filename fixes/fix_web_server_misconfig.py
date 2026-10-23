@@ -384,7 +384,7 @@ server {{
 
 def generate_apache_config(document_root: str = "/var/www/html") -> str:
     """Generate secure Apache configuration."""
-    return f"""
+    return fr"""
 <VirtualHost *:80>
     DocumentRoot {document_root}
 

@@ -61,9 +61,9 @@ jobs:
               const removedLines = patch.split("\n").filter(l => l.startsWith("-") && !l.startsWith("---"));
 
               // Check for common fix patterns
-              const hasInputValidation = patch.some(l => /validate|sanitize|escape|strip/i.test(l));
-              const hasAuthCheck = patch.some(l => /auth|permission|role|access.*control/i.test(l));
-              const hasBoundsCheck = patch.some(l => /limit|max|check|bound|verify/i.test(l));
+              const hasInputValidation = /validate|sanitize|escape|strip/i.test(patch);
+              const hasAuthCheck = /auth|permission|role|access.*control/i.test(patch);
+              const hasBoundsCheck = /limit|max|check|bound|verify/i.test(patch);
 
               results.push({
                 file: filename,

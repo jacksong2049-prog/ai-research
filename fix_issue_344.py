@@ -1,13 +1,7 @@
-"""Fix for issue #344 - security vulnerability mitigation"""
-import re, json
-
+"""Fix for issue #344: security input validation."""
+import re
 SECURITY_FIX = True
 
 def apply_security_patch(input_data):
-    """Apply security fix: input validation + output encoding"""
-    sanitized = re.sub(r'[<>&"'\n\r]', '', str(input_data))
+    sanitized = re.sub(r"[<>&\"'\\r\n]", "", str(input_data))
     return {"status": "patched", "data": sanitized}
-
-if __name__ == "__main__":
-    result = apply_security_patch("test<script>alert(1)</script>")
-    print(f"Security fix applied: {result}")

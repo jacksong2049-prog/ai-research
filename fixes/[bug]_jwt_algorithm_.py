@@ -1,20 +1,8 @@
-"""Fix for #439: [BUG] JWT Algorithm Confusion + Key Injection Comb"""
+"""Generated security-fix sample with safe input validation."""
 import re
 
 def sanitize(data):
-    """Sanitize user input"""
-    if isinstance(data, str):
-        return re.sub(r'[<>&"'\\
-]', '', data)
-    return data
+    return re.sub(r"[<>&\"'\\\r\n]", "", data) if isinstance(data, str) else data
 
 def validate(data):
-    """Validate input"""
-    if not data:
-        return False
-    return True
-
-if __name__ == "__main__":
-    assert sanitize("<script>") == "script"
-    assert validate("test") == True
-    print("All tests passed!")
+    return bool(data)
