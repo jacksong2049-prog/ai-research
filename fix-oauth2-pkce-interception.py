@@ -301,8 +301,7 @@ if __name__ == "__main__":
     print(f"State: {auth_params['state'][:20]}...")
 
     # Step 2: 回调处理
-    print("
-=== Callback Handler ===")
+    print("\n=== Callback Handler ===")
     try:
         token = exchange_code_for_token(
             token_endpoint="https://auth.example.com/token",
@@ -320,8 +319,7 @@ if __name__ == "__main__":
         print(f"[BLOCKED] {e}")
 
     # 安全审计
-    print("
-=== Security Audit ===")
+    print("\n=== Security Audit ===")
     test_config = {
         "response_type": "token",
         "pkce_enabled": False,

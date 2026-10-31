@@ -1,100 +1,42 @@
-import asyncio
+from __future__ import annotations
+import hashlib, hmac, json, os, secrets
+from datetime import datetime, timezone
 import websockets
-import json
-import os
-import secrets
-import hashlib
-import hmac
-from datetime import datetime
-
-# Security configuration
-ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000,https://app.example.com').split(',')
-SESSION_SECRET = os.environ.get('SESSION_SECRET', secrets.token_hex(32))
-
+ALLOWED_ORIGINS = [x.strip().rstrip('/') for x in os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000,https://app.example.com').split(',') if x.strip()]
 class SessionManager:
-    def __init__(self):
-        self.sessions = {}
-        self._secret = secrets.token_bytes(32)
-    
+    def __init__(self): self.sessions, self._secret = {}, secrets.token_bytes(32)
     def create_session(self, client_info):
-        # Use cryptographically secure random token instead of predictable counter
-        random_token = secrets.token_urlsafe(32)
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        # HMAC-based session ID prevents prediction
-        session_data = f"{client_info['ip']}:{timestamp}:{random_token}"
-        session_hash = hmac.new(self._secret, session_data.encode(), hashlib.sha256).hexdigest()[:16]
-        session_id = f"sess_{session_hash}_{timestamp}_{random_token[:8]}"
-        self.sessions[session_id] = {
-            'created_at': datetime.now(),
-            'client_info': client_info,
-    def get_session(self, session_id):
-        return self.sessions.get(session_id)
-    
-    def validate_session(self, session_id, client_ip):
-        session = self.sessions.get(session_id)
-        if not session:
-            return False
-        return session['client_info'].get('ip') == client_ip
-    
-    def update_session(self, session_id, data):
-        if session_id in self.sessions:
-            self.sessions[session_id]['data'].update(data)
-
+        token, timestamp = secrets.token_urlsafe(32), datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
+        digest = hmac.new(self._secret, f"{client_info.get('ip','unknown')}:{timestamp}:{token}".encode(), hashlib.sha256).hexdigest()[:16]
+        sid = f'sess_{digest}_{timestamp}_{token[:8]}'; self.sessions[sid] = {'created_at': datetime.now(timezone.utc), 'client_info': dict(client_info), 'data': {}}
+        return {'id': sid, 'session_id': sid}
+    def get_session(self, sid): return self.sessions.get(sid)
+    def validate_session(self, sid, client_ip):
+        s = self.sessions.get(sid); return bool(s and hmac.compare_digest(s['client_info'].get('ip', ''), client_ip))
+    def update_session(self, sid, data):
+        if sid in self.sessions: self.sessions[sid]['data'].update(data)
 session_manager = SessionManager()
-
-def validate_origin(websocket):
-    """Validate the Origin header to prevent cross-origin WebSocket hijacking."""
-    origin = websocket.request_headers.get('Origin')
-    if not origin:
-        # If no origin is provided, check Referer as fallback
-        origin = websocket.request_headers.get('Referer', '')
-    
-    if not origin:
-        return False
-    
-    # Normalize origin for comparison
-    origin = origin.rstrip('/')
-    
-    for allowed in ALLOWED_ORIGINS:
-        allowed = allowed.strip().rstrip('/')
-        if origin == allowed:
-            return True
-    
-    return False
-
+def validate_origin(websocket): return getattr(websocket, 'request_headers', {}).get('Origin', '').rstrip('/') in ALLOWED_ORIGINS
 def get_client_ip(websocket):
-    """Extract client IP from websocket connection."""
-    # Try to get real IP from headers first (for proxies)
-    forwarded = websocket.request_headers.get('X-Forwarded-For')
-    if forwarded:
-        return forwarded.split(',')[0].strip()
-    return websocket.remote_address[0] if websocket.remote_address else 'unknown'
-
-async def handle_client(websocket, path):
-    # Validate origin before accepting connection
-    if not validate_origin(websocket):
-        await websocket.close(code=1008, reason='Invalid origin')
-        return
-    
-    client_ip = get_client_ip(websocket)
-    session = session_manager.create_session({'ip': client_ip})
-    
+    headers = getattr(websocket, 'request_headers', {}); forwarded = headers.get('X-Forwarded-For')
+    if forwarded: return forwarded.split(',', 1)[0].strip()
+    remote = getattr(websocket, 'remote_address', None); return remote[0] if remote else 'unknown'
+async def handle_client(websocket, path=None):
+    if not validate_origin(websocket): await websocket.close(code=1008, reason='Invalid origin'); return
+    client_ip, session = get_client_ip(websocket), session_manager.create_session({'ip': get_client_ip(websocket)})
+    await websocket.send(json.dumps({'type': 'session', 'session_id': session['session_id']}))
     try:
-                data = json.loads(message)
-                action = data.get('action')
-                
-                # Validate session ownership on every message
-                if not session_manager.validate_session(session['id'], client_ip):
-                    await websocket.send(json.dumps({'error': 'Session validation failed'}))
-                    continue
-                
-                if action == 'ping':
-                    await websocket.send(json.dumps({'type': 'pong'}))
-                elif action == 'get_data':
-        del session_manager.sessions[session['id']]
-
+        async for message in websocket:
+            try: data = json.loads(message)
+            except (TypeError, json.JSONDecodeError): await websocket.send(json.dumps({'error': 'Invalid JSON'})); continue
+            if not session_manager.validate_session(session['id'], client_ip): await websocket.send(json.dumps({'error': 'Session validation failed'})); continue
+            action = data.get('action')
+            if action == 'ping': response = {'type': 'pong'}
+            elif action == 'get_data': response = {'type': 'data', 'data': session_manager.get_session(session['id'])['data']}
+            else: response = {'error': 'Unknown action'}
+            await websocket.send(json.dumps(response))
+    finally: session_manager.sessions.pop(session['id'], None)
 async def main():
-    server = await websockets.serve(handle_client, '0.0.0.0', 8765, origins=None)
-    await server.wait_closed()
-
+    async with websockets.serve(handle_client, '0.0.0.0', 8765, origins=ALLOWED_ORIGINS): await __import__('asyncio').Future()
 if __name__ == '__main__':
+    import asyncio; asyncio.run(main())
