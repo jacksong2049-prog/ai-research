@@ -143,3 +143,32 @@ def get_email_hash(email: str, secret_key: Optional[str] = None) -> str:
         ).hexdigest()
     
     return hashlib.sha256(normalized.encode()).hexdigest()
+from dataclasses import dataclass
+from typing import Dict
+import base64
+
+@dataclass(frozen=True)
+class User:
+    email: str
+    password_hash: str
+
+class UserManager:
+    def __init__(self):
+        self._users: Dict[str, User] = {}
+    def create_user(self, email: str, password: str) -> User:
+        if not password or len(password) < 8:
+            raise ValueError("Password must contain at least 8 characters")
+        email = normalize_email(email)
+        if email in self._users:
+            raise ValueError("User already exists")
+        salt = secrets.token_bytes(16)
+        digest = hashlib.scrypt(password.encode(), salt=salt, n=2**14, r=8, p=1)
+        user = User(email, base64.b64encode(salt + digest).decode())
+        self._users[email] = user
+        return user
+    def authenticate(self, email: str, password: str) -> Optional[User]:
+        user = self._users.get(normalize_email(email))
+        if user is None: return None
+        raw = base64.b64decode(user.password_hash)
+        actual = hashlib.scrypt(password.encode(), salt=raw[:16], n=2**14, r=8, p=1)
+        return user if hmac.compare_digest(actual, raw[16:]) else None

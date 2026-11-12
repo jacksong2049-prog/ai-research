@@ -125,3 +125,4 @@ if __name__ == '__main__':
     try:
         main()
     except PermissionError:
+        print("Permission denied; run this tool with appropriate privileges.")
