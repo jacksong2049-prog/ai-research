@@ -1,37 +1,26 @@
-import os
-import hashlib
-import fcntl
-import tempfile
+from __future__ import annotations
+import hashlib, os, tempfile
 from pathlib import Path
-from typing import BinaryIO, Optional
 
-        if not self._is_safe_path(destination):
-            raise SecurityError("Invalid destination path")
-        
-        dest_path = Path(destination).resolve()
-        
-        # Ensure parent directory exists
-        dest_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        # Use atomic write with temp file to prevent race condition
-        # where partial/incomplete files are visible to other processes
-        temp_fd = None
-        temp_path = None
+class SecurityError(ValueError): pass
+
+class SecureFileStorage:
+    def __init__(self, root):
+        self.root = Path(root).resolve(); self.root.mkdir(parents=True, exist_ok=True)
+    def _is_safe_path(self, destination):
+        try: (self.root / Path(destination)).resolve().relative_to(self.root); return True
+        except (ValueError, OSError): return False
+    def write(self, destination: str, content: bytes) -> Path:
+        if not isinstance(content, bytes): raise TypeError("content must be bytes")
+        if not self._is_safe_path(destination): raise SecurityError("Invalid destination path")
+        dest = (self.root / destination).resolve(); dest.parent.mkdir(parents=True, exist_ok=True); temp = None
         try:
-            # Create temp file in same directory for atomic rename
-            temp_fd, temp_path = tempfile.mkstemp(
-                dir=dest_path.parent,
-                prefix=f".atomic_{dest_path.name}_"
-            )
-            
-            with os.fdopen(temp_fd, 'wb') as f:
-                f.write(content)
-                f.flush()
-                os.fsync(f.fileno())
-            
-            # Atomic rename ensures other processes see complete file or nothing
-            os.replace(temp_path, dest_path)
-        except Exception:
-            if temp_path and os.path.exists(temp_path):
-                os.unlink(temp_path)
-            raise
+            fd, temp = tempfile.mkstemp(dir=dest.parent, prefix=f".atomic_{dest.name}_")
+            with os.fdopen(fd, "wb") as stream: stream.write(content); stream.flush(); os.fsync(stream.fileno())
+            os.replace(temp, dest); temp = None; return dest
+        finally:
+            if temp and os.path.exists(temp): os.unlink(temp)
+    def sha256(self, destination: str) -> str:
+        path = (self.root / destination).resolve()
+        if not self._is_safe_path(destination) or not path.is_file(): raise SecurityError("Invalid source path")
+        return hashlib.sha256(path.read_bytes()).hexdigest()
